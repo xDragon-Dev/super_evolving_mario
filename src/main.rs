@@ -1,51 +1,20 @@
 use bevy::prelude::*;
 
-#[derive(Component)]
-struct Person;
+mod components;
+mod entities;
+mod systems;
 
-#[derive(Component)]
-struct Name(String);
-
-#[derive(Resource)]
-struct GreetTimer(Timer);
+use entities::*;
+use systems::*;
 
 fn main() {
     App::new()
-        .insert_resource(GreetTimer(Timer::from_seconds(2.0, TimerMode::Repeating)))
-        .add_plugins(DefaultPlugins)
-        .add_plugins(HelloPlugin)
+        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
+        .add_systems(Startup, setup)
+        .add_systems(Update, (flip_sprite, update_mario_facing_direction).chain())
+        .add_systems(
+            Update,
+            (update_mario_state, update_sprite_animation).chain(),
+        )
         .run();
-}
-
-fn add_people(mut commands: Commands) {
-    commands.spawn((Person, Name(String::from("Juanito"))));
-    commands.spawn((Person, Name(String::from("Pedrito"))));
-    commands.spawn((Person, Name(String::from("Maria"))));
-    commands.spawn((Person, Name(String::from("José"))));
-}
-
-fn greet_people(time: Res<Time>, mut timer: ResMut<GreetTimer>, query: Query<&Name, With<Person>>) {
-    if timer.0.tick(time.delta()).just_finished(){
-        for name in query {
-            println!("Hello {}!", name.0);
-        }
-    }
-}
-
-fn update_people(mut query: Query<&mut Name, With<Person>>) {
-    for mut name in &mut query {
-        if name.0 == "Juanito" {
-            name.0 = "Miguel".into();
-        }
-    }
-}
-
-pub struct HelloPlugin;
-
-impl Plugin for HelloPlugin {
-    fn build(&self, app: &mut App) {
-        app
-            .add_systems(Startup, add_people)
-            .add_systems(Update, (update_people, greet_people).chain());
-    }
 }
