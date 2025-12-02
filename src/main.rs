@@ -1,20 +1,29 @@
 use bevy::prelude::*;
 
-mod components;
-mod entities;
-mod systems;
+mod camera_tracker;
+mod input_movement;
+mod mario;
+mod physics;
+mod sprite;
+mod tiles;
+mod ga;
 
-use entities::*;
-use systems::*;
+use crate::camera_tracker::*;
+use crate::input_movement::*;
+use crate::mario::*;
+use crate::physics::*;
+use crate::sprite::*;
+use crate::tiles::*;
+use crate::ga::*;
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()))
-        .add_systems(Startup, setup)
-        .add_systems(Update, (flip_sprite, update_mario_facing_direction).chain())
-        .add_systems(
-            Update,
-            (update_mario_state, update_sprite_animation).chain(),
-        )
+        .add_plugins(TilesPlugin)
+        .add_plugins(PhysicsPlugin)
+        .add_plugins(MarioPlugin)
+        .add_plugins(SpritePlugin)
+        .add_plugins(InputMovementPlugin)
+        .add_plugins(CameraTrackerPlugin)
         .run();
 }
