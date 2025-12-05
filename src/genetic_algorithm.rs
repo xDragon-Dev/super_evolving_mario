@@ -59,8 +59,8 @@ impl std::default::Default for GeneticAlgorithmConfig {
             mutation_rate: 0.2,
             crossover_rate: 0.9,
             generations: 500,
-            elitism: 2,
-            tournament_k: 3,
+            elitism: 5,
+            tournament_k: 5,
         }
     }
 }
@@ -150,7 +150,7 @@ pub fn transition_generations(
 }
 
 pub fn select_tournament(population: &[(&ActiontSet, &AgentState)], k: u8) -> ActiontSet {
-    let mut rng = rand::rng(); // Corregido: Usar thread_rng para un generador local
+    let mut rng = rand::rng();
     let mut best_agent: Option<(&ActiontSet, &AgentState)> = None;
     for _ in 0..k {
         let current_agent = population.choose(&mut rng).unwrap();
@@ -188,7 +188,10 @@ pub fn mutate(action_set: &mut ActiontSet) {
                 action.time_point = (action.time_point + rng.random_range(-0.5..0.5)).max(0.0);
             }
             _ => {
-                action.duration = (action.duration + rng.random_range(-0.2..0.2)).max(0.05);
+                action.duration = match action.movement{
+                    MarioMovement::Jump => 0.0,
+                    _ => (action.duration + rng.random_range(-0.2..0.2)).max(0.05)
+                }
             }
         }
     }
@@ -215,6 +218,7 @@ pub fn create_next_generation(
             None,
         ));
     let mut sorted_population = q_mario.iter().collect::<Vec<_>>();
+
     sorted_population.sort_unstable_by(|a, b| {
         b.2.fitness
             .partial_cmp(&a.2.fitness)
