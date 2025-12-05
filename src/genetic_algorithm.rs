@@ -2,7 +2,7 @@ use crate::mario::*;
 use crate::movement::action_schedule_movement::*;
 use crate::physics::*;
 
-use bevy::{prelude::*, asset::LoadState};
+use bevy::prelude::*;
 use rand::prelude::*;
 
 // --- ESTADOS Y RECURSOS DE CONTROL ---
@@ -129,13 +129,13 @@ pub fn check_generation_end(
 
 /// Maneja la transición entre generaciones o el final del GA.
 pub fn transition_generations(
-    mut commands: Commands,
+    commands: Commands,
     ga_config: Res<GeneticAlgorithmConfig>,
     mut tracker: ResMut<GenerationTracker>,
     mut next_ga_state: ResMut<NextState<GeneticAlgorithmState>>,
     q_mario: Query<(Entity, &ActiontSet, &AgentState, &Transform), With<Mario>>,
     asset_server: Res<AssetServer>,
-    mut texture_atlas_layout: ResMut<Assets<TextureAtlasLayout>>,
+    texture_atlas_layout: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     tracker.current_generation += 1;
     
@@ -174,7 +174,7 @@ pub fn transition_generations(
 // (Funciones select_tournament, crossover, mutate, create_next_generation)
 
 pub fn select_tournament(population: &[(&ActiontSet, &AgentState)], k: u8) -> ActiontSet {
-    let mut rng = rand::thread_rng(); // Corregido: Usar thread_rng para un generador local
+    let mut rng = rand::rng(); // Corregido: Usar thread_rng para un generador local
     let mut best_agent: Option<(&ActiontSet, &AgentState)> = None;
     for _ in 0..k {
         let current_agent = population.choose(&mut rng).unwrap();
@@ -186,7 +186,7 @@ pub fn select_tournament(population: &[(&ActiontSet, &AgentState)], k: u8) -> Ac
 }
 
 pub fn crossover(parent1: &ActiontSet, parent2: &ActiontSet) -> ActiontSet {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let dna1 = &parent1.0;
     let dna2 = &parent2.0;
     let min_len = dna1.len().min(dna2.len());
@@ -194,7 +194,7 @@ pub fn crossover(parent1: &ActiontSet, parent2: &ActiontSet) -> ActiontSet {
         return parent1.clone();
     }
     // Corregido: rng.gen_range(min..max) para obtener rango
-    let crossover_point = rng.gen_range(1..min_len); 
+    let crossover_point = rng.random_range(1..min_len); 
     let mut child_actions = Vec::new();
     child_actions.extend_from_slice(&dna1[0..crossover_point]);
     child_actions.extend_from_slice(&dna2[crossover_point..]);
@@ -203,10 +203,10 @@ pub fn crossover(parent1: &ActiontSet, parent2: &ActiontSet) -> ActiontSet {
 
 /// Aplica mutación al ActiontSet con una probabilidad dada.
 pub fn mutate(action_set: &mut ActiontSet, mutation_rate: f32) {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     for action in action_set.0.iter_mut() {
-        if rng.gen_bool(mutation_rate as f64) {
-            match rng.gen_range(0..3) {
+        if rng.random_bool(mutation_rate as f64) {
+            match rng.random_range(0..3) {
                 0 => {
                     action.movement = match action.movement {
                         MarioMovement::MoveLeft => MarioMovement::MoveRight,
@@ -216,10 +216,10 @@ pub fn mutate(action_set: &mut ActiontSet, mutation_rate: f32) {
                 }
                 1 => {
                     // Corregido: Usar gen_range
-                    action.time_point = (action.time_point + rng.gen_range(-0.5..0.5)).max(0.0);
+                    action.time_point = (action.time_point + rng.random_range(-0.5..0.5)).max(0.0);
                 }
                 _ => {
-                    action.duration = (action.duration + rng.gen_range(-0.2..0.2)).max(0.05);
+                    action.duration = (action.duration + rng.random_range(-0.2..0.2)).max(0.05);
                 }
             }
         }
@@ -233,7 +233,7 @@ pub fn create_next_generation(
     asset_server: Res<AssetServer>,
     mut texture_atlas_layout: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let population: Vec<(&ActiontSet, &AgentState)> = q_mario
         .iter()
         .map(|(_, dna, state, _)| (dna, state))
@@ -265,14 +265,14 @@ pub fn create_next_generation(
 
     while new_population_dna.len() < ga_config.population_size as usize {
         let mut child_dna: ActiontSet;
-        if rng.gen_bool(ga_config.crossover_rate as f64) {
+        if rng.random_bool(ga_config.crossover_rate as f64) {
             let parent1_dna = select_tournament(&population, ga_config.tournament_k);
             let parent2_dna = select_tournament(&population, ga_config.tournament_k);
             child_dna = crossover(&parent1_dna, &parent2_dna);
         } else {
             child_dna = select_tournament(&population, ga_config.tournament_k);
         }
-        if rng.gen_bool(ga_config.mutation_rate as f64) {
+        if rng.random_bool(ga_config.mutation_rate as f64) {
             mutate(&mut child_dna, ga_config.mutation_rate);
         }
         new_population_dna.push(child_dna);
