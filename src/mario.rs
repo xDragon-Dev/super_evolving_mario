@@ -1,7 +1,6 @@
 use crate::sprite::*;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::*;
 
 #[derive(Component, Default)]
 pub struct Mario;
