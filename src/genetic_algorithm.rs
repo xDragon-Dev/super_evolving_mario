@@ -66,8 +66,6 @@ impl std::default::Default for GeneticAlgorithmConfig {
 }
 
 // --- SISTEMAS DEL ALGORITMO GENÉTICO ---
-
-/// Inicializa la primera población, transicionando de WaitingToStart a RunningGeneration.
 pub fn generate_initial_population(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -75,7 +73,6 @@ pub fn generate_initial_population(
     genetic_algorithm_config: Res<GeneticAlgorithmConfig>,
     mut next_ga_state: ResMut<NextState<GeneticAlgorithmState>>,
 ) {
-    // 💥 NOTA: Debes asegurarte de que "Small_mario.png" ya esté cargado antes de llamar a esto
     let mario_texture: Handle<Image> = asset_server.load("Small_mario.png"); 
     let layout = TextureAtlasLayout::from_grid(UVec2::new(17, 16), 7, 1, None, None); 
     let texture_atlas_layout: Handle<TextureAtlasLayout> = texture_atlas_layout.add(layout);
@@ -97,37 +94,25 @@ pub fn update_agent_fitness(mut q_mario: Query<(&Transform, &mut AgentState), Wi
         // Solo actualizar si el agente aún no ha terminado.
         if !agent_state.finished {
             let current_distance = transform.translation.x;
-            if current_distance > agent_state.fitness {
-                agent_state.fitness = current_distance;
-            }
-            // NOTA: Debes tener otro sistema que ponga finished=true
-            // (e.g., al colisionar con un enemigo o caer fuera del mundo).
+            agent_state.fitness = current_distance;
         }
     }
 }
 
-/// Sistema que comprueba si todos los agentes han terminado o muerto.
 pub fn check_generation_end(
     q_agents: Query<&AgentState, With<Mario>>,
     mut next_ga_state: ResMut<NextState<GeneticAlgorithmState>>,
 ) {
     if q_agents.is_empty() {
-        // La población no se ha spawneado aún, ignorar.
         return;
     }
-
-    // Comprueba si CUALQUIER agente NO ha terminado.
     let any_agent_running = q_agents.iter().any(|state| !state.finished);
-
     if !any_agent_running {
-        // Todos los agentes tienen finished = true.
         info!("Generación terminada. Transicionando a GenerationComplete.");
         next_ga_state.set(GeneticAlgorithmState::GenerationComplete);
     }
 }
 
-
-/// Maneja la transición entre generaciones o el final del GA.
 pub fn transition_generations(
     commands: Commands,
     ga_config: Res<GeneticAlgorithmConfig>,
@@ -164,15 +149,6 @@ pub fn transition_generations(
     next_ga_state.set(GeneticAlgorithmState::RunningGeneration);
 }
 
-// ------------------------------------------------------------------------------------------------
-// NOTA: Las funciones select_tournament, crossover, mutate y create_next_generation
-//       (con ligeras modificaciones en la firma de create_next_generation) 
-//       se mantienen sin cambios importantes en su lógica interna.
-// ------------------------------------------------------------------------------------------------
-
-// ******* Lógica de selección, cruce, mutación (Mantenida de tu código) *******
-// (Funciones select_tournament, crossover, mutate, create_next_generation)
-
 pub fn select_tournament(population: &[(&ActiontSet, &AgentState)], k: u8) -> ActiontSet {
     let mut rng = rand::rng(); // Corregido: Usar thread_rng para un generador local
     let mut best_agent: Option<(&ActiontSet, &AgentState)> = None;
@@ -193,7 +169,6 @@ pub fn crossover(parent1: &ActiontSet, parent2: &ActiontSet) -> ActiontSet {
     if min_len < 2 {
         return parent1.clone();
     }
-    // Corregido: rng.gen_range(min..max) para obtener rango
     let crossover_point = rng.random_range(1..min_len); 
     let mut child_actions = Vec::new();
     child_actions.extend_from_slice(&dna1[0..crossover_point]);
@@ -202,25 +177,18 @@ pub fn crossover(parent1: &ActiontSet, parent2: &ActiontSet) -> ActiontSet {
 }
 
 /// Aplica mutación al ActiontSet con una probabilidad dada.
-pub fn mutate(action_set: &mut ActiontSet, mutation_rate: f32) {
+pub fn mutate(action_set: &mut ActiontSet) {
     let mut rng = rand::rng();
     for action in action_set.0.iter_mut() {
-        if rng.random_bool(mutation_rate as f64) {
-            match rng.random_range(0..3) {
-                0 => {
-                    action.movement = match action.movement {
-                        MarioMovement::MoveLeft => MarioMovement::MoveRight,
-                        MarioMovement::MoveRight => MarioMovement::Jump,
-                        MarioMovement::Jump => MarioMovement::MoveLeft,
-                    };
-                }
-                1 => {
-                    // Corregido: Usar gen_range
-                    action.time_point = (action.time_point + rng.random_range(-0.5..0.5)).max(0.0);
-                }
-                _ => {
-                    action.duration = (action.duration + rng.random_range(-0.2..0.2)).max(0.05);
-                }
+        match rng.random_range(0..3) {
+            0 => {
+                action.movement = MarioMovement::random()
+            }
+            1 => {
+                action.time_point = (action.time_point + rng.random_range(-0.5..0.5)).max(0.0);
+            }
+            _ => {
+                action.duration = (action.duration + rng.random_range(-0.2..0.2)).max(0.05);
             }
         }
     }
@@ -238,8 +206,6 @@ pub fn create_next_generation(
         .iter()
         .map(|(_, dna, state, _)| (dna, state))
         .collect();
-        
-    // Generación de Assets (Optimización: podrías mover esto al setup)
     let mario_texture: Handle<Image> = asset_server.load("Small_mario.png"); 
     let texture_atlas_layout: Handle<TextureAtlasLayout> = texture_atlas_layout.add(TextureAtlasLayout::from_grid(
             UVec2::new(17, 16),
@@ -248,21 +214,18 @@ pub fn create_next_generation(
             None,
             None,
         ));
-
     let mut sorted_population = q_mario.iter().collect::<Vec<_>>();
     sorted_population.sort_unstable_by(|a, b| {
         b.2.fitness
             .partial_cmp(&a.2.fitness)
             .unwrap_or(std::cmp::Ordering::Equal)
     });
-
     let elitism_count = ga_config.elitism as usize;
     let elite_agents = &sorted_population[0..elitism_count];
     let mut new_population_dna: Vec<ActiontSet> = Vec::new();
     for (_, dna, _, _) in elite_agents {
         new_population_dna.push((*dna).clone());
     }
-
     while new_population_dna.len() < ga_config.population_size as usize {
         let mut child_dna: ActiontSet;
         if rng.random_bool(ga_config.crossover_rate as f64) {
@@ -273,17 +236,13 @@ pub fn create_next_generation(
             child_dna = select_tournament(&population, ga_config.tournament_k);
         }
         if rng.random_bool(ga_config.mutation_rate as f64) {
-            mutate(&mut child_dna, ga_config.mutation_rate);
+            mutate(&mut child_dna);
         }
         new_population_dna.push(child_dna);
     }
-    
-    // 💥 DESPAWN DE LA GENERACIÓN VIEJA
     for (entity, _, _, _) in q_mario.iter() {
         commands.entity(entity).despawn();
     }
-
-    // 💥 SPAWN DE LA NUEVA GENERACIÓN
     for dna in new_population_dna {
         commands.spawn((
             generate_mario_entity(mario_texture.clone(), texture_atlas_layout.clone()),
@@ -295,7 +254,6 @@ pub fn create_next_generation(
         ));
     }
 }
-// ******* FIN de Lógica de selección, cruce, mutación *******
 
 
 pub struct GeneticAlgorithmPlugin;
