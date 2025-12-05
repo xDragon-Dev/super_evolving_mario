@@ -4555,6 +4555,9 @@ dependencies = [
  "bevy",
  "bevy_ecs_ldtk",
  "bevy_rapier2d",
+ "rand",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

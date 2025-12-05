@@ -1,5 +1,6 @@
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
+use crate::mario::*;
 
 #[derive(Component, PartialEq)]
 pub enum FacingDirection {
@@ -19,14 +20,6 @@ impl SpriteSelectorHelper {
     }
 }
 
-#[derive(Component, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum SpriteAnimationState {
-    Idle,
-    Walk,
-    Jump,
-    Dead,
-}
-
 pub struct SpriteAnimationClip {
     pub frames: Vec<usize>,
     pub fps: f32,
@@ -34,11 +27,11 @@ pub struct SpriteAnimationClip {
 
 #[derive(Component)]
 pub struct SpriteAnimationSet {
-    pub animations: HashMap<SpriteAnimationState, SpriteAnimationClip>,
+    pub animations: HashMap<MarioGlobalState, SpriteAnimationClip>,
 }
 
 impl SpriteAnimationSet {
-    pub fn new(animations: HashMap<SpriteAnimationState, SpriteAnimationClip>) -> Self {
+    pub fn new(animations: HashMap<MarioGlobalState, SpriteAnimationClip>) -> Self {
         Self { animations }
     }
 }
@@ -53,7 +46,7 @@ pub fn update_sprite_animation(
     mut sprite_data: Query<(
         &mut Sprite,
         &mut SpriteSelectorHelper,
-        &SpriteAnimationState,
+        &MarioGlobalState,
         &SpriteAnimationSet,
     )>,
     time: Res<Time>,

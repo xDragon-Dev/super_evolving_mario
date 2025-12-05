@@ -1,13 +1,15 @@
-use crate::mario::*;
+//use crate::mario::*;
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
-use bevy_ecs_ldtk::{LdtkEntity, LdtkIntCell};
+use bevy_ecs_ldtk::{/*LdtkEntity,*/ LdtkIntCell};
 use bevy_rapier2d::prelude::*;
 
+/*
 #[derive(Bundle, LdtkEntity, Default)]
 pub struct MarioBundle {
     mario: Mario,
 }
+*/
 
 #[derive(Component, Default)]
 pub struct KillZone;
@@ -52,8 +54,14 @@ pub fn viewport_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
 pub fn setup_kill_zone_cells(mut commands: Commands, solids: Query<Entity, Added<KillZone>>) {
     for e in solids.iter() {
         commands.entity(e).insert((
-            Collider::cuboid(8.0, 8.0), // si tu tile mide 16x16 px → 8x8 unidades
-            RigidBody::Fixed,           // colisión estática que no se mueve
+            Collider::cuboid(8.0, 8.0),
+            RigidBody::Fixed,
+            Ccd::enabled(),
+            Sensor,
+            CollisionGroups {
+                memberships: Group::from_bits_retain(2),
+                filters: Group::from_bits_retain(1),
+            },
         ));
     }
 }
@@ -61,8 +69,13 @@ pub fn setup_kill_zone_cells(mut commands: Commands, solids: Query<Entity, Added
 pub fn setup_solid_cells(mut commands: Commands, solids: Query<Entity, Added<Solid>>) {
     for e in solids.iter() {
         commands.entity(e).insert((
-            Collider::cuboid(8.0, 8.0), // si tu tile mide 16x16 px → 8x8 unidades
-            RigidBody::Fixed,           // colisión estática que no se mueve
+            Collider::cuboid(8.0, 8.0),
+            RigidBody::Fixed,
+            Ccd::enabled(),
+            CollisionGroups {
+                memberships: Group::from_bits_retain(2),
+                filters: Group::from_bits_retain(1),
+            },
         ));
     }
 }
@@ -70,8 +83,14 @@ pub fn setup_solid_cells(mut commands: Commands, solids: Query<Entity, Added<Sol
 pub fn setup_goal_cells(mut commands: Commands, solids: Query<Entity, Added<Goal>>) {
     for e in solids.iter() {
         commands.entity(e).insert((
-            Collider::cuboid(8.0, 8.0), // si tu tile mide 16x16 px → 8x8 unidades
-            RigidBody::Fixed,           // colisión estática que no se mueve
+            Collider::cuboid(8.0, 8.0),
+            RigidBody::Fixed,
+            Sensor,
+            Ccd::enabled(),
+            CollisionGroups {
+                memberships: Group::from_bits_retain(2),
+                filters: Group::from_bits_retain(1),
+            },
         ));
     }
 }
@@ -93,7 +112,7 @@ impl Plugin for TilesPlugin {
             .register_ldtk_int_cell::<KillZoneBundle>(1)
             .register_ldtk_int_cell::<SolidBundle>(2)
             .register_ldtk_int_cell::<GoalBundle>(3)
-            .register_ldtk_entity::<MarioBundle>("Mario")
+            //.register_ldtk_entity::<MarioBundle>("Mario")
             .add_systems(Update, setup_kill_zone_cells)
             .add_systems(Update, setup_solid_cells)
             .add_systems(Update, setup_goal_cells)
