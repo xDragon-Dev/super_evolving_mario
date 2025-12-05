@@ -293,6 +293,7 @@ pub mod action_schedule_movement {
     }
 }
 
+/*
 mod keyboard_input_movement {
     use crate::mario::*;
     use crate::sprite::*;
@@ -368,3 +369,4 @@ mod keyboard_input_movement {
         }
     }
 }
+ */
