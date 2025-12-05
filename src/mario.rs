@@ -45,14 +45,7 @@ pub fn generate_mario_entity(
     SpriteSelectorHelper,
     SpriteAnimationSet,
     Transform,
-    RigidBody,
-    Collider,
-    LockedAxes,
-    Velocity,
-    GravityScale,
-    Ccd,
     Mario,
-    CollisionGroups,
 ) {
     (
         Sprite {
@@ -97,16 +90,6 @@ pub fn generate_mario_entity(
             ),
         ])),
         Transform::from_translation(Vec3::new(225.0, -110.0, 2.0)),
-        RigidBody::Dynamic,
-        Collider::cuboid(7.0, 8.0),
-        LockedAxes::ROTATION_LOCKED, // para que no se voltee
-        Velocity::zero(),
-        GravityScale(1.0),
-        Ccd::enabled(),
         Mario,
-        CollisionGroups {
-            memberships: Group::from_bits_retain(1),
-            filters: Group::from_bits_retain(2),
-        },
     )
 }

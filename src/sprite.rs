@@ -1,6 +1,6 @@
+use crate::mario::*;
 use bevy::platform::collections::HashMap;
 use bevy::prelude::*;
-use crate::mario::*;
 
 #[derive(Component, PartialEq)]
 pub enum FacingDirection {

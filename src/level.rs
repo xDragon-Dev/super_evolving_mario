@@ -2,7 +2,10 @@
 use bevy::prelude::*;
 use bevy_ecs_ldtk::prelude::*;
 use bevy_ecs_ldtk::{/*LdtkEntity,*/ LdtkIntCell};
-use bevy_rapier2d::prelude::*;
+
+use crate::physics::{
+    generate_physical_sensor_map_components, generate_physical_solid_map_components,
+};
 
 /*
 #[derive(Bundle, LdtkEntity, Default)]
@@ -35,63 +38,41 @@ pub struct GoalBundle {
     goal: Goal,
 }
 
-pub fn viewport_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn((
-        Camera2d,
-        Projection::Orthographic(OrthographicProjection {
-            scale: 0.25,
-            ..OrthographicProjection::default_2d()
-        }),
-        Transform::from_translation(Vec3::new(225.0, -110.0, 1.0)),
-    ));
+// * CONSERVAMOS EL HANDLE DEL ASSET DEL MUNDO PARA PODER UTILIZAR SUS METADADOS DEL MUNDO
+// * COMO POR EJEMPLO EN
+//#[derive(Resource, Default)]
+//pub struct LevelAssetHandle(pub Handle<LdtkProject>);
 
+pub fn viewport_setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    let ldtk_project_handle: Handle<LdtkProject> = asset_server.load::<LdtkProject>("map.ldtk");
     commands.spawn(LdtkWorldBundle {
-        ldtk_handle: asset_server.load("map.ldtk").into(),
+        ldtk_handle: ldtk_project_handle.clone().into(),
         ..Default::default()
     });
+    //commands.insert_resource(LevelAssetHandle(ldtk_project_handle));
 }
 
 pub fn setup_kill_zone_cells(mut commands: Commands, solids: Query<Entity, Added<KillZone>>) {
     for e in solids.iter() {
-        commands.entity(e).insert((
-            Collider::cuboid(8.0, 8.0),
-            RigidBody::Fixed,
-            Ccd::enabled(),
-            Sensor,
-            CollisionGroups {
-                memberships: Group::from_bits_retain(2),
-                filters: Group::from_bits_retain(1),
-            },
-        ));
+        commands
+            .entity(e)
+            .insert(generate_physical_sensor_map_components());
     }
 }
 
 pub fn setup_solid_cells(mut commands: Commands, solids: Query<Entity, Added<Solid>>) {
     for e in solids.iter() {
-        commands.entity(e).insert((
-            Collider::cuboid(8.0, 8.0),
-            RigidBody::Fixed,
-            Ccd::enabled(),
-            CollisionGroups {
-                memberships: Group::from_bits_retain(2),
-                filters: Group::from_bits_retain(1),
-            },
-        ));
+        commands
+            .entity(e)
+            .insert(generate_physical_solid_map_components());
     }
 }
 
 pub fn setup_goal_cells(mut commands: Commands, solids: Query<Entity, Added<Goal>>) {
     for e in solids.iter() {
-        commands.entity(e).insert((
-            Collider::cuboid(8.0, 8.0),
-            RigidBody::Fixed,
-            Sensor,
-            Ccd::enabled(),
-            CollisionGroups {
-                memberships: Group::from_bits_retain(2),
-                filters: Group::from_bits_retain(1),
-            },
-        ));
+        commands
+            .entity(e)
+            .insert(generate_physical_sensor_map_components());
     }
 }
 

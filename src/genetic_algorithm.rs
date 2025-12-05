@@ -1,7 +1,8 @@
-use crate::auto_movement::*;
 use crate::mario::*;
+use crate::movement::action_schedule_movement::*;
+use crate::physics::*;
+
 use bevy::prelude::*;
-use bevy_rapier2d::prelude::ActiveEvents;
 use rand::prelude::*;
 
 #[derive(Resource)]
@@ -22,7 +23,10 @@ pub struct AgentState {
 
 impl std::default::Default for AgentState {
     fn default() -> Self {
-        Self { fitness: 0.0, finished: false }
+        Self {
+            fitness: 0.0,
+            finished: false,
+        }
     }
 }
 
@@ -50,23 +54,10 @@ pub fn generate_initial_population(
     let texture_atlas_layout: Handle<TextureAtlasLayout> = texture_atlas_layout.add(layout);
 
     for _ in 0..genetic_algorithm_config.population_size {
-        let id = commands
-            .spawn(generate_mario_entity(
-                mario_texture.clone(),
-                texture_atlas_layout.clone(),
-            ))
-            .id();
-        //Agregados unos componentes extras (para otras lógicas)
-        let action_set = ActiontSet::new_random();
-        let action_schedule = ActionSchedule::from(action_set.clone());
-        let mario_current_actions = MarioCurrentActions::default();
-        let agent_state = AgentState::default();
-        commands.entity(id).insert((
-            action_set,
-            action_schedule,
-            mario_current_actions,
-            agent_state,
-            ActiveEvents::COLLISION_EVENTS
+        commands.spawn((
+            generate_mario_entity(mario_texture.clone(), texture_atlas_layout.clone()),
+            generate_physical_entity_components(),
+            generate_random_movement_components(),
         ));
     }
 }
@@ -145,9 +136,15 @@ pub fn create_next_generation(
         .collect();
     let (mario_texture, texture_atlas_layout) = (
         asset_server.load("Small_mario.png"),
-        texture_atlas_layout.add(TextureAtlasLayout::from_grid(UVec2::new(17, 16),7,1,None,None))
+        texture_atlas_layout.add(TextureAtlasLayout::from_grid(
+            UVec2::new(17, 16),
+            7,
+            1,
+            None,
+            None,
+        )),
     );
-    
+
     let mut sorted_population = q_mario.iter().collect::<Vec<_>>();
     sorted_population.sort_unstable_by(|a, b| {
         b.2.fitness
@@ -181,20 +178,13 @@ pub fn create_next_generation(
     }
 
     for dna in new_population_dna {
-        let id = commands
-            .spawn(generate_mario_entity(
-                mario_texture.clone(),
-                texture_atlas_layout.clone(),
-            ))
-            .id();
-        commands.entity(id).insert((
+        commands.spawn((
+            generate_mario_entity(mario_texture.clone(), texture_atlas_layout.clone()),
+            generate_physical_entity_components(),
             dna.clone(),
             ActionSchedule::from(dna),
             MarioCurrentActions::default(),
-            AgentState {
-                fitness: 0.0,
-                finished: false,
-            },
+            AgentState::default(),
         ));
     }
 }

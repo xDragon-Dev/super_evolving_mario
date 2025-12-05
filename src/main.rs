@@ -1,20 +1,19 @@
 use bevy::prelude::*;
 
-mod auto_movement;
-mod camera_tracker;
+mod camera;
 mod genetic_algorithm;
-//mod input_movement;  Ya no eres útil
+mod movement;
+mod level;
 mod mario;
 mod physics;
 mod sprite;
-mod tiles;
 
-use crate::auto_movement::*;
-use crate::camera_tracker::*;
+use crate::camera::*;
 use crate::genetic_algorithm::*;
+use crate::level::*;
+use crate::movement::action_schedule_movement::*;
 use crate::physics::*;
 use crate::sprite::*;
-use crate::tiles::*;
 
 fn main() {
     App::new()
@@ -22,7 +21,6 @@ fn main() {
         .add_plugins(TilesPlugin)
         .add_plugins(PhysicsPlugin)
         .add_plugins(SpritePlugin)
-        //.add_plugins(InputMovementPlugin)
         .add_plugins(CameraTrackerPlugin)
         .add_plugins(AutoMovementPlugin)
         .add_plugins(GeneticAlgorithmPlugin)
